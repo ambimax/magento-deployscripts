@@ -1,0 +1,19 @@
+{
+  "name":"ambimax/magento-deployscripts",
+  "description":"Collection of scripts for Magento builds and deployments",
+  "minimum-stability":"dev",
+  "authors":[
+    {
+      "name":"Fabrizio Branca"
+    },
+    {
+      "name": "Tobias Schifftner"
+    }
+  ],
+  "bin": [
+    "install.sh",
+    "n98-magerun.phar",
+    "modman",
+    "systemstorage_import.sh"
+  ]
+}
