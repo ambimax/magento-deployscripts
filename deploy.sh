@@ -97,7 +97,7 @@ if [ -f "${PACKAGEURL}" ] ; then
     fi
 elif [[ "${PACKAGEURL}" =~ ^https?:// ]] ; then
     if [ ! -z "${USERNAME}" ] && [ ! -z "${PASSWORD}" ] ; then
-        CREDENTIALS="--user='${USERNAME}' --password='${PASSWORD}'"
+        CREDENTIALS="--user=${USERNAME} --password=${PASSWORD}"
     fi
     echo "Downloading package via http"
     wget --auth-no-challenge "${CREDENTIALS}" "${PACKAGEURL}" -O "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from http" ; exit 1; }
