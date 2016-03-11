@@ -100,10 +100,10 @@ elif [[ "${PACKAGEURL}" =~ ^https?:// ]] ; then
         CREDENTIALS="--user=${USERNAME} --password=${PASSWORD}"
     fi
     echo "Downloading package via http"
-    wget --auth-no-challenge "${CREDENTIALS}" "${PACKAGEURL}" -O "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from http" ; exit 1; }
+    wget --auth-no-challenge ${CREDENTIALS} "${PACKAGEURL}" -O "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from http" ; exit 1; }
     if [ "${EXTRA}" == 1 ] ; then
         echo "Downloading extra package via http"
-        wget --auth-no-challenge "${CREDENTIALS}" "${EXTRAPACKAGEURL}" -O "${TMPDIR}/package.extra.tar.gz" || { echo "Error while downloading extra package from http" ; exit 1; }
+        wget --auth-no-challenge ${CREDENTIALS} "${EXTRAPACKAGEURL}" -O "${TMPDIR}/package.extra.tar.gz" || { echo "Error while downloading extra package from http" ; exit 1; }
     fi
 elif [[ "${PACKAGEURL}" =~ ^s3:// ]] ; then
     echo -n "Downloading base package via S3"
