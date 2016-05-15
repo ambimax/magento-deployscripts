@@ -14,6 +14,6 @@
     "install.sh",
     "n98-magerun.phar",
     "modman",
-    "systemstorage_import.sh"
+    "project_reset.sh"
   ]
 }

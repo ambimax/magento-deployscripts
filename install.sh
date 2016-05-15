@@ -9,7 +9,8 @@ function usage {
     echo "Usage:"
     echo " $0 -e <environment> [-r <releaseFolder>] [-s]"
     echo " -e Environment (e.g. production, staging, devbox,...)"
-    echo " -s If set the systemstorage will not be imported"
+    echo " -s If set the project storage will not be imported"
+    echo " -cc If set the cache will be cleared"
     echo ""
     exit $1
 }
@@ -19,6 +20,7 @@ case "${OPTION}" in
         e) ENVIRONMENT="${OPTARG}";;
         r) RELEASEFOLDER=`echo "${OPTARG}" | sed -e "s/\/*$//" `;; # delete last slash
         s) SKIPIMPORTFROMSYSTEMSTORAGE=true;;
+        c) CLEARCACHE=true;;
         \?) echo; usage 1;;
     esac
 done
@@ -69,43 +71,45 @@ tools/modman deploy-all --force || { echo "Error while running modman" ; exit 1;
 
 
 
-#echo
-#echo "Systemstorage"
-#echo "-------------"
-#if [[ -n ${SKIPIMPORTFROMSYSTEMSTORAGE} ]]  && ${SKIPIMPORTFROMSYSTEMSTORAGE} ; then
-#    echo "Skipping import system storage backup because parameter was set"
-#else
-#
-#    if [ -z "${MASTER_SYSTEM}" ] ; then
-#        if [ ! -f "${RELEASEFOLDER}/config/mastersystem.txt" ] ; then echo "Could not find mastersystem.txt"; exit 1; fi
-#        MASTER_SYSTEM=`cat ${RELEASEFOLDER}/config/mastersystem.txt`
-#        if [ -z "${MASTER_SYSTEM}" ] ; then echo "Error reading master system"; exit 1; fi
-#    fi
-#
-#    if [ "${MASTER_SYSTEM}" == "${ENVIRONMENT}" ] ; then
-#        echo "Current environment is the master environment. Skipping import."
-#    else
-#        echo "Current environment is not the master environment. Importing system storage..."
-#
-#        if [ -z "${PROJECT}" ] ; then
-#            if [ ! -f "${RELEASEFOLDER}/config/project.txt" ] ; then echo "Could not find project.txt"; exit 1; fi
-#            PROJECT=`cat ${RELEASEFOLDER}/config/project.txt`
-#            if [ -z "${PROJECT}" ] ; then echo "Error reading project name"; exit 1; fi
-#        fi
-#
-#        # Apply db settings
-#        cd "${RELEASEFOLDER}/htdocs" || { echo "Error while switching to htdocs directory" ; exit 1; }
-#        ../tools/apply.php "${ENVIRONMENT}" ../config/settings.csv --groups db || { echo "Error while applying db settings" ; exit 1; }
-#
-#        if [ -z "${SYSTEM_STORAGE_ROOT_PATH}" ] ; then
-#            SYSTEM_STORAGE_ROOT_PATH="/home/systemstorage/systemstorage/${PROJECT}/backup/${MASTER_SYSTEM}"
-#        fi
-#
-#        # Import systemstorage
-#        ../tools/systemstorage_import.sh -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || { echo "Error while importing systemstorage"; exit 1; }
-#    fi
-#
-#fi
+echo
+echo "Systemstorage"
+echo "-------------"
+if [[ -n ${SKIPIMPORTFROMSYSTEMSTORAGE} ]]  && ${SKIPIMPORTFROMSYSTEMSTORAGE} ; then
+    echo "Skipping import system storage backup because parameter was set"
+else
+
+    if [ -z "${MASTER_SYSTEM}" ] ; then
+        if [ -f "${RELEASEFOLDER}/config/mastersystem.txt" ] ; then
+            MASTER_SYSTEM=`cat ${RELEASEFOLDER}/config/mastersystem.txt`
+        else
+            MASTER_SYSTEM="production"
+        fi
+    fi
+
+    if [ "${MASTER_SYSTEM}" == "${ENVIRONMENT}" ] ; then
+        echo "Current environment is the master environment. Skipping import."
+    else
+        echo "Current environment is not the master environment. Importing system storage..."
+
+        if [ -z "${PROJECT}" ] ; then
+            if [ ! -f "${RELEASEFOLDER}/config/project.txt" ] ; then echo "Could not find project.txt"; exit 1; fi
+            PROJECT=`cat ${RELEASEFOLDER}/config/project.txt`
+            if [ -z "${PROJECT}" ] ; then echo "Error reading project name"; exit 1; fi
+        fi
+
+        # Apply db settings
+        cd "${RELEASEFOLDER}/htdocs" || { echo "Error while switching to htdocs directory" ; exit 1; }
+        ../tools/apply.php "${ENVIRONMENT}" ../config/settings.csv --groups db || { echo "Error while applying db settings" ; exit 1; }
+
+        if [ -z "${SYSTEM_STORAGE_ROOT_PATH}" ] ; then
+            SYSTEM_STORAGE_ROOT_PATH="/home/projectstorage/${PROJECT}/backup/${MASTER_SYSTEM}"
+        fi
+
+        # Import project storage
+        ../tools/project_reset.sh -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || { echo "Error while importing project storage"; exit 1; }
+    fi
+
+fi
 
 
 echo
@@ -136,15 +140,16 @@ cd -P "${RELEASEFOLDER}/htdocs/" || { echo "Error while switching to htdocs dire
 
 
 # Cache should be handled by customizing the id_prefix!
-#echo
-#echo "Cache"
-#echo "-----"
-#
-#if [ "${ENVIRONMENT}" == "devbox" ] || [ "${ENVIRONMENT}" == "latest" ] || [ "${ENVIRONMENT}" == "deploy" ] ; then
-#    cd -P "${RELEASEFOLDER}/htdocs/" || { echo "Error while switching to htdocs directory" ; exit 1; }
-#    ../tools/n98-magerun.phar cache:flush || { echo "Error while flushing cache using n98-magerun" ; exit 1; }
+echo
+echo "Cache"
+echo "-----"
+if [[ -n ${CLEARCACHE} ]]  && ${CLEARCACHE} ; then
+    cd -P "${RELEASEFOLDER}/htdocs/" || { echo "Error while switching to htdocs directory" ; exit 1; }
+    ../tools/n98-magerun.phar cache:flush || { echo "Error while flushing cache using n98-magerun" ; exit 1; }
 #    ../tools/n98-magerun.phar cache:enable || { echo "Error while enabling cache using n98-magerun" ; exit 1; }
-#fi
+else
+    echo "skipped"
+fi
 
 
 if [ -f "${RELEASEFOLDER}/htdocs/maintenance.flag" ] ; then
