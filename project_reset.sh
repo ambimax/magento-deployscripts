@@ -4,8 +4,8 @@
 ABSPATH=$(cd "${0%/*}" 2>/dev/null; echo "${PWD}/${0##*/}")
 SOURCE_DIR=`dirname "${ABSPATH}"`
 
-if [ -d `realpath "${SOURCE_DIR}/../htdocs"` ]; then
-    PROJECT_WEBROOT=`realpath "${SOURCE_DIR}/../htdocs"`
+if [ -d `"${SOURCE_DIR}/../htdocs"` ]; then
+    PROJECT_WEBROOT=`"${SOURCE_DIR}/../htdocs"`
 fi
 
 function usage {
