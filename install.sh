@@ -106,7 +106,9 @@ else
         fi
 
         # Import project storage
-        ../tools/project_reset.sh -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || { echo "Error while importing project storage"; exit 1; }
+        if [ -d "${SYSTEM_STORAGE_ROOT_PATH}" ]; then
+            ../tools/project_reset.sh -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || { echo "Error while importing project storage"; exit 1; }
+        fi
     fi
 
 fi
