@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-VALID_ENVIRONMENTS=" production staging devbox latest deploy integration "
-
 MY_PATH=`dirname $(readlink -f "$0")`
 RELEASEFOLDER=$(readlink -f "${MY_PATH}/../../..")
 
@@ -30,14 +28,16 @@ if [ ! -f "${RELEASEFOLDER}/tools/n98-magerun.phar" ] ; then echo "Could not fin
 if [ ! -f "${RELEASEFOLDER}/tools/apply.php" ] ; then echo "Could not find apply.php" ; exit 1; fi
 if [ ! -f "${RELEASEFOLDER}/config/settings.csv" ] ; then echo "Could not find settings.csv" ; exit 1; fi
 
+
 # Checking environment
+VALID_ENVIRONMENTS=`head -n 1 "${RELEASEFOLDER}/config/settings.csv" | sed "s/^.*DEFAULT,//" | sed "s/,/ /g" | sed "s/\r//"`
+
 if [ -z "${ENVIRONMENT}" ]; then echo "ERROR: Please provide an environment code (e.g. -e staging)"; exit 1; fi
-if [[ "${VALID_ENVIRONMENTS}" =~ " ${ENVIRONMENT} " ]] ; then
+if [[ " ${VALID_ENVIRONMENTS} " =~ " ${ENVIRONMENT} " ]] ; then
     echo "Environment: ${ENVIRONMENT}"
 else
-    echo "ERROR: Illegal environment code" ; exit 1;
+    echo "ERROR: Illegal environment code ${ENVIRONMENT}" ; exit 1;
 fi
-
 
 echo
 echo "Linking to shared directories"
