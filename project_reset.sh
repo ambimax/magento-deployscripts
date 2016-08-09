@@ -10,7 +10,7 @@ fi
 
 function usage {
     echo "Usage:"
-    echo "$0 -p <projectWebRootPath> -s <systemStorageRootPath> [-a <awsCliProfile>] [-f]"
+    echo "$0 -e <environment> -p <projectWebRootPath> -s <systemStorageRootPath> [-a <awsCliProfile>] [-f]"
     echo "    -p <projectWebRootPath>       Project web root path (htdocs)"
     echo "    -s <systemStorageRootPath>    Systemstorage project root path"
     echo "    -f                            If set file will be skipped (database only)"
@@ -22,8 +22,9 @@ function usage {
 
 
 # Process options
-while getopts 'p:s:a:f' OPTION ; do
+while getopts 'e:p:s:a:f' OPTION ; do
     case "${OPTION}" in
+        e) ENVIRONMENT="${OPTARG}";;
         p) PROJECT_WEBROOT=`echo "${OPTARG}" | sed -e "s/\/*$//" `;; # delete last slash
         s) SYSTEMSTORAGEPATH=`echo "${OPTARG}" | sed -e "s/\/*$//" `;; # delete last slash
         a) AWSCLIPROFILE=${OPTARG};;
@@ -34,6 +35,16 @@ done
 
 if [ ! -d "${PROJECT_WEBROOT}" ] ; then echo "Could not find project root ${PROJECT_WEBROOT}" ; usage 1; fi
 if [ ! -f "${PROJECT_WEBROOT}/index.php" ] ; then echo "Invalid ${PROJECT_WEBROOT} (could not find index.php)" ; usage 1; fi
+
+# Checking environment
+VALID_ENVIRONMENTS=`head -n 1 "${PROJECT_WEBROOT}/../config/settings.csv" | sed "s/^.*DEFAULT,//" | sed "s/,/ /g" | sed "s/\r//"`
+
+if [ -z "${ENVIRONMENT}" ]; then echo "ERROR: Please provide an environment code (e.g. -e staging)"; exit 1; fi
+if [[ " ${VALID_ENVIRONMENTS} " =~ " ${ENVIRONMENT} " ]] ; then
+    echo "Environment: ${ENVIRONMENT}"
+else
+    echo "ERROR: Illegal environment code ${ENVIRONMENT}" ; exit 1;
+fi
 
 
 function cleanup {
@@ -93,6 +104,12 @@ $n98 -q db:drop --tables --force || { echo "Error while dropping all tables"; ex
 echo "Import database dump ${SYSTEMSTORAGE_LOCAL}/database/combined_dump.sql.gz"
 $n98 -q db:import --compression=gzip "${SYSTEMSTORAGE_LOCAL}/database/combined_dump.sql.gz" ||  { echo "Error while importing dump"; exit 1; }
 
+echo
+echo "Applying settings"
+echo "-----------------"
+cd "${PROJECT_WEBROOT}" || { echo "Error while switching to htdocs directory" ; exit 1; }
+../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+echo
 
 
 # Importing files...
