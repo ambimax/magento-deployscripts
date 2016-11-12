@@ -99,7 +99,11 @@ else
 
         # Apply db settings
         cd "${RELEASEFOLDER}/htdocs" || { echo "Error while switching to htdocs directory" ; exit 1; }
-        ../tools/apply.php "${ENVIRONMENT}" ../config/settings.csv --groups db || { echo "Error while applying db settings" ; exit 1; }
+        if [ -f ../vendor/aoepeople/zettr/zettr.phar ]; then
+            ../vendor/aoepeople/zettr/zettr.phar apply --groups db ${ENVIRONMENT} ../config/settings.csv
+        else
+            ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+        fi
 
         if [ -z "${SYSTEM_STORAGE_ROOT_PATH}" ] ; then
             SYSTEM_STORAGE_ROOT_PATH="/home/projectstorage/${PROJECT}/backup/${MASTER_SYSTEM}"
