@@ -25,7 +25,7 @@ done
 
 if [ ! -f "${RELEASEFOLDER}/htdocs/index.php" ] ; then echo "Invalid release folder" ; exit 1; fi
 if [ ! -f "${RELEASEFOLDER}/tools/n98-magerun.phar" ] ; then echo "Could not find n98-magerun.phar" ; exit 1; fi
-if [ ! -f "${RELEASEFOLDER}/tools/apply.php" ] ; then echo "Could not find apply.php" ; exit 1; fi
+if ([ ! -f "${RELEASEFOLDER}/tools/apply.php" ] && [ ! -f "${RELEASEFOLDER}/vendor/aoepeople/zettr/zettr.phar" ]); then echo "Could not find zettr.phar nor apply.php" ; exit 1; fi
 if [ ! -f "${RELEASEFOLDER}/config/settings.csv" ] ; then echo "Could not find settings.csv" ; exit 1; fi
 
 

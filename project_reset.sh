@@ -108,7 +108,11 @@ echo
 echo "Applying settings"
 echo "-----------------"
 cd "${PROJECT_WEBROOT}" || { echo "Error while switching to htdocs directory" ; exit 1; }
-../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+if [ -f ../vendor/aoepeople/zettr/zettr.phar ]; then
+    ../vendor/aoepeople/zettr/zettr.phar apply ${ENVIRONMENT} ../config/settings.csv
+else
+    ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+fi
 echo
 
 
