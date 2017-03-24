@@ -80,13 +80,13 @@ else
 
     if [ -z "${MASTER_SYSTEM}" ] ; then
         if [ -f "${RELEASEFOLDER}/config/mastersystem.txt" ] ; then
-            MASTER_SYSTEM=`cat ${RELEASEFOLDER}/config/mastersystem.txt`
+            MASTER_SYSTEM=`head -n 1 "${RELEASEFOLDER}/config/mastersystem.txt" | sed "s/,/ /g" | sed "s/\r//"`
         else
             MASTER_SYSTEM="production"
         fi
     fi
 
-    if [ "${MASTER_SYSTEM}" == "${ENVIRONMENT}" ] ; then
+    if [[ " ${MASTER_SYSTEM} " =~ " ${ENVIRONMENT} " ]] ; then
         echo "Current environment is the master environment. Skipping import."
     else
         echo "Current environment is not the master environment. Importing system storage..."
