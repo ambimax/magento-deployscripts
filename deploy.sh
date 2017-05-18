@@ -158,7 +158,7 @@ fi
 ########################################################################################################################
 
 if [ ! -f "${RELEASEFOLDER}/tools/install.sh" ] ; then echo "Could not find installer" ; exit 1; fi
-${RELEASEFOLDER}/tools/install.sh -e "${ENVIRONMENT}" || { echo "Installing package failed"; exit 1; }
+${RELEASEFOLDER}/tools/install.sh -e "${ENVIRONMENT}" -r "${RELEASEFOLDER}" || { echo "Installing package failed"; exit 1; }
 
 
 
