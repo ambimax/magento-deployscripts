@@ -39,6 +39,14 @@ else
     PHP_COMMAND=php
 fi
 
+dpkg -l pigz > /dev/null 2>&1
+if [ $? == '0' ]; then
+    TAR_COMMAND='tar -I pigz -cf '
+    echo "Using pigz for compression..."
+else
+    TAR_COMMAND='tar -czf '
+fi
+
 # Run composer
 $PHP_COMMAND tools/composer.phar install --verbose --no-ansi --no-interaction --prefer-source || { echo "Composer failed"; exit 1; }
 
@@ -81,7 +89,7 @@ fi
 
 BASEPACKAGE="artifacts/${FILENAME}"
 echo "Creating base package '${BASEPACKAGE}'"
-tar -vczf "${BASEPACKAGE}" \
+${TAR_COMMAND}v "${BASEPACKAGE}" \
     --exclude=./htdocs/var \
     --exclude=./htdocs/media \
     --exclude=./artifacts \
@@ -90,7 +98,7 @@ tar -vczf "${BASEPACKAGE}" \
 
 EXTRAPACKAGE=${BASEPACKAGE/.tar.gz/.extra.tar.gz}
 echo "Creating extra package '${EXTRAPACKAGE}' with the remaining files"
-tar -czf "${EXTRAPACKAGE}" \
+${TAR_COMMAND} "${EXTRAPACKAGE}" \
     --exclude=./htdocs/var \
     --exclude=./htdocs/media \
     --exclude=./artifacts \
