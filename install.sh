@@ -13,6 +13,16 @@ function usage {
     exit $1
 }
 
+function error_exit {
+	echo "$1" 1>&2
+	exit 1
+}
+
+function usage_exit {
+    echo "$1" 1>&2
+    usage 1
+}
+
 while getopts 'e:r:s' OPTION ; do
 case "${OPTION}" in
         e) ENVIRONMENT="${OPTARG}";;
@@ -23,20 +33,20 @@ case "${OPTION}" in
     esac
 done
 
-if [ ! -f "${RELEASEFOLDER}/htdocs/index.php" ] ; then echo "Invalid release folder" ; exit 1; fi
-if [ ! -f "${RELEASEFOLDER}/tools/n98-magerun.phar" ] ; then echo "Could not find n98-magerun.phar" ; exit 1; fi
-if ([ ! -f "${RELEASEFOLDER}/tools/apply.php" ] && [ ! -f "${RELEASEFOLDER}/vendor/aoepeople/zettr/zettr.phar" ]); then echo "Could not find zettr.phar nor apply.php" ; exit 1; fi
-if [ ! -f "${RELEASEFOLDER}/config/settings.csv" ] ; then echo "Could not find settings.csv" ; exit 1; fi
+if [ ! -f "${RELEASEFOLDER}/htdocs/index.php" ] ; then error_exit "Invalid release folder"; fi
+if [ ! -f "${RELEASEFOLDER}/tools/n98-magerun.phar" ] ; then error_exit "Could not find n98-magerun.phar"; fi
+if ([ ! -f "${RELEASEFOLDER}/tools/apply.php" ] && [ ! -f "${RELEASEFOLDER}/vendor/aoepeople/zettr/zettr.phar" ]); then error_exit "Could not find zettr.phar nor apply.php"; fi
+if [ ! -f "${RELEASEFOLDER}/config/settings.csv" ] ; then error_exit "Could not find settings.csv"; fi
 
 
 # Checking environment
 VALID_ENVIRONMENTS=`head -n 1 "${RELEASEFOLDER}/config/settings.csv" | sed "s/^.*DEFAULT,//" | sed "s/,/ /g" | sed "s/\r//"`
 
-if [ -z "${ENVIRONMENT}" ]; then echo "ERROR: Please provide an environment code (e.g. -e staging)"; exit 1; fi
+if [ -z "${ENVIRONMENT}" ]; then error_exit "ERROR: Please provide an environment code (e.g. -e staging)"; fi
 if [[ " ${VALID_ENVIRONMENTS} " =~ " ${ENVIRONMENT} " ]] ; then
     echo "Environment: ${ENVIRONMENT}"
 else
-    echo "ERROR: Illegal environment code ${ENVIRONMENT}" ; exit 1;
+    error_exit "ERROR: Illegal environment code ${ENVIRONMENT}"
 fi
 
 echo
@@ -48,26 +58,26 @@ if [ ! -d "${SHAREDFOLDER}" ] ; then
     SHAREDFOLDER="${RELEASEFOLDER}/../../../shared";
 fi
 
-if [ ! -d "${SHAREDFOLDER}" ] ; then echo "Shared directory ${SHAREDFOLDER} not found"; exit 1; fi
-if [ ! -d "${SHAREDFOLDER}/media" ] ; then echo "Shared directory ${SHAREDFOLDER}/media not found"; exit 1; fi
-if [ ! -d "${SHAREDFOLDER}/var" ] ; then echo "Shared directory ${SHAREDFOLDER}/var not found"; exit 1; fi
+if [ ! -d "${SHAREDFOLDER}" ] ; then error_exit "Shared directory ${SHAREDFOLDER} not found"; fi
+if [ ! -d "${SHAREDFOLDER}/media" ] ; then error_exit "Shared directory ${SHAREDFOLDER}/media not found"; fi
+if [ ! -d "${SHAREDFOLDER}/var" ] ; then error_exit "Shared directory ${SHAREDFOLDER}/var not found"; fi
 
-if [ -d "${RELEASEFOLDER}/htdocs/media" ]; then echo "Found existing media folder that shouldn't be there"; exit 1; fi
-if [ -d "${RELEASEFOLDER}/htdocs/var" ]; then echo "Found existing var folder that shouldn't be there"; exit 1; fi
+if [ -d "${RELEASEFOLDER}/htdocs/media" ]; then error_exit "Found existing media folder that shouldn't be there"; fi
+if [ -d "${RELEASEFOLDER}/htdocs/var" ]; then error_exit "Found existing var folder that shouldn't be there"; fi
 
 echo "Setting symlink (${RELEASEFOLDER}/htdocs/media) to shared media folder (${SHAREDFOLDER}/media)"
-ln -s "${SHAREDFOLDER}/media" "${RELEASEFOLDER}/htdocs/media"  || { echo "Error while linking to shared media directory" ; exit 1; }
+ln -s "${SHAREDFOLDER}/media" "${RELEASEFOLDER}/htdocs/media"  || error_exit "Error while linking to shared media directory"
 
 echo "Setting symlink (${RELEASEFOLDER}/htdocs/var) to shared var folder (${SHAREDFOLDER}/var)"
-ln -s "${SHAREDFOLDER}/var" "${RELEASEFOLDER}/htdocs/var"  || { echo "Error while linking to shared var directory" ; exit 1; }
+ln -s "${SHAREDFOLDER}/var" "${RELEASEFOLDER}/htdocs/var"  || error_exit "Error while linking to shared var directory"
 
 
 
 echo
 echo "Running modman"
 echo "--------------"
-cd "${RELEASEFOLDER}" || { echo "Error while switching to release directory" ; exit 1; }
-tools/modman deploy-all --force || { echo "Error while running modman" ; exit 1; }
+cd "${RELEASEFOLDER}" || error_exit "Error while switching to release directory"
+tools/modman deploy-all --force || error_exit "Error while running modman"
 
 
 
@@ -92,17 +102,17 @@ else
         echo "Current environment is not the master environment. Importing system storage..."
 
         if [ -z "${PROJECT}" ] ; then
-            if [ ! -f "${RELEASEFOLDER}/config/project.txt" ] ; then echo "Could not find project.txt"; exit 1; fi
+            if [ ! -f "${RELEASEFOLDER}/config/project.txt" ] ; then error_exit "Could not find project.txt"; fi
             PROJECT=`cat ${RELEASEFOLDER}/config/project.txt`
-            if [ -z "${PROJECT}" ] ; then echo "Error reading project name"; exit 1; fi
+            if [ -z "${PROJECT}" ] ; then error_exit "Error reading project name"; fi
         fi
 
         # Apply db settings
-        cd "${RELEASEFOLDER}/htdocs" || { echo "Error while switching to htdocs directory" ; exit 1; }
+        cd "${RELEASEFOLDER}/htdocs" || error_exit "Error while switching to htdocs directory"
         if [ -f ../vendor/aoepeople/zettr/zettr.phar ]; then
             ../vendor/aoepeople/zettr/zettr.phar apply --groups db ${ENVIRONMENT} ../config/settings.csv
         else
-            ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+            ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || error_exit "Error while applying settings"
         fi
 
         if [ -z "${SYSTEM_STORAGE_ROOT_PATH}" ] ; then
@@ -111,7 +121,7 @@ else
 
         # Import project storage
         if [ -d "${SYSTEM_STORAGE_ROOT_PATH}" ]; then
-            ../tools/project_reset.sh -e ${ENVIRONMENT} -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || { echo "Error while importing project storage"; exit 1; }
+            ../tools/project_reset.sh -e ${ENVIRONMENT} -p "${RELEASEFOLDER}/htdocs/" -s "${SYSTEM_STORAGE_ROOT_PATH}" || error_exit "Error while importing project storage"
         fi
     fi
 
@@ -121,11 +131,11 @@ fi
 echo
 echo "Applying settings"
 echo "-----------------"
-cd "${RELEASEFOLDER}/htdocs" || { echo "Error while switching to htdocs directory" ; exit 1; }
+cd "${RELEASEFOLDER}/htdocs" || error_exit "Error while switching to htdocs directory"
 if [ -f ../vendor/aoepeople/zettr/zettr.phar ]; then
-    ../vendor/aoepeople/zettr/zettr.phar apply ${ENVIRONMENT} ../config/settings.csv
+    ../vendor/aoepeople/zettr/zettr.phar apply ${ENVIRONMENT} ../config/settings.csv || error_exit "Error while applying settings"
 else
-    ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || { echo "Error while applying settings" ; exit 1; }
+    ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || error_exit "Error while applying settings"
 fi
 echo
 
@@ -135,8 +145,8 @@ if [ -f "${RELEASEFOLDER}/htdocs/shell/aoe_classpathcache.php" ] ; then
     echo
     echo "Setting revalidate class path cache flag (Aoe_ClassPathCache)"
     echo "-------------------------------------------------------------"
-    cd "${RELEASEFOLDER}/htdocs/shell" || { echo "Error while switching to htdocs/shell directory" ; exit 1; }
-    php aoe_classpathcache.php -action setRevalidateFlag || { echo "Error while revalidating Aoe_ClassPathCache" ; exit 1; }
+    cd "${RELEASEFOLDER}/htdocs/shell" || error_exit "Error while switching to htdocs/shell directory"
+    php aoe_classpathcache.php -action setRevalidateFlag || error_exit "Error while revalidating Aoe_ClassPathCache"
 fi
 
 
@@ -144,8 +154,8 @@ fi
 echo
 echo "Triggering Magento setup scripts via n98-magerun"
 echo "------------------------------------------------"
-cd -P "${RELEASEFOLDER}/htdocs/" || { echo "Error while switching to htdocs directory" ; exit 1; }
-../tools/n98-magerun.phar sys:setup:run || { echo "Error while triggering the update scripts using n98-magerun" ; exit 1; }
+cd -P "${RELEASEFOLDER}/htdocs/" || error_exit "Error while switching to htdocs directory"
+../tools/n98-magerun.phar sys:setup:run || error_exit "Error while triggering the update scripts using n98-magerun"
 
 
 
@@ -154,9 +164,9 @@ echo
 echo "Cache"
 echo "-----"
 if [[ -n ${CLEARCACHE} ]]  && ${CLEARCACHE} ; then
-    cd -P "${RELEASEFOLDER}/htdocs/" || { echo "Error while switching to htdocs directory" ; exit 1; }
-    ../tools/n98-magerun.phar cache:flush || { echo "Error while flushing cache using n98-magerun" ; exit 1; }
-#    ../tools/n98-magerun.phar cache:enable || { echo "Error while enabling cache using n98-magerun" ; exit 1; }
+    cd -P "${RELEASEFOLDER}/htdocs/" || error_exit "Error while switching to htdocs directory"
+    ../tools/n98-magerun.phar cache:flush || error_exit "Error while flushing cache using n98-magerun"
+#    ../tools/n98-magerun.phar cache:enable || error_exit "Error while enabling cache using n98-magerun"
 else
     echo "skipped"
 fi
@@ -166,7 +176,7 @@ if [ -f "${RELEASEFOLDER}/htdocs/maintenance.flag" ] ; then
     echo
     echo "Deleting maintenance.flag"
     echo "-------------------------"
-    rm "${RELEASEFOLDER}/htdocs/maintenance.flag" || { echo "Error while deleting the maintenance.flag" ; exit 1; }
+    rm "${RELEASEFOLDER}/htdocs/maintenance.flag" || error_exit "Error while deleting the maintenance.flag"
 fi
 
 echo
