@@ -39,12 +39,12 @@ else
     PHP_COMMAND=php
 fi
 
+TAR_COMMAND='tar -czf'
+
 dpkg -l pigz > /dev/null 2>&1
 if [ $? == '0' ]; then
     TAR_COMMAND='tar -I pigz -cf'
     echo "Using pigz for compression..."
-else
-    TAR_COMMAND='tar -czf'
 fi
 
 # Run composer
@@ -89,7 +89,7 @@ fi
 
 BASEPACKAGE="artifacts/${FILENAME}"
 echo "Creating base package '${BASEPACKAGE}'"
-${TAR_COMMAND}v "${BASEPACKAGE}" \
+${TAR_COMMAND} "${BASEPACKAGE}" --verbose \
     --exclude=./htdocs/var \
     --exclude=./htdocs/media \
     --exclude=./artifacts \
