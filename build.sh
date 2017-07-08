@@ -41,10 +41,10 @@ fi
 
 dpkg -l pigz > /dev/null 2>&1
 if [ $? == '0' ]; then
-    TAR_COMMAND='tar -I pigz -cf '
+    TAR_COMMAND='tar -I pigz -cf'
     echo "Using pigz for compression..."
 else
-    TAR_COMMAND='tar -czf '
+    TAR_COMMAND='tar -czf'
 fi
 
 # Run composer
