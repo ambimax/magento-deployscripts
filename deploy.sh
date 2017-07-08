@@ -39,6 +39,17 @@ function usage {
     exit $1
 }
 
+function error_exit {
+	echo "$1" 1>&2
+	exit 1
+}
+
+function usage_exit {
+    echo "$1" 1>&2
+    usage 1
+}
+
+
 AWSCLIPROFILE=''
 EXTRA=0
 USES3CMD=0
@@ -57,22 +68,22 @@ case "${OPTION}" in
     esac
 done
 
-if [ -z "${PACKAGEURL}" ]; then echo "ERROR: Please provide package url (e.g. -r s3://mybucket/demo.tar.gz)"; usage 1; fi
-if [ -z "${ENVROOTDIR}" ]; then echo "ERROR: Please provide a target dircteory (e.g. -t /var/www/demo/)"; usage 1; fi
-if [ -z "${ENVIRONMENT}" ]; then echo "ERROR: Please provide an environment code (e.g. -e staging)"; usage 1; fi
+if [ -z "${PACKAGEURL}" ]; then usage_exit "ERROR: Please provide package url (e.g. -r s3://mybucket/demo.tar.gz)"; fi
+if [ -z "${ENVROOTDIR}" ]; then usage_exit "ERROR: Please provide a target dircteory (e.g. -t /var/www/demo/)"; fi
+if [ -z "${ENVIRONMENT}" ]; then usage_exit "ERROR: Please provide an environment code (e.g. -e staging)"; fi
 
 # Check if releases folder exists
 RELEASES="${ENVROOTDIR}/releases"
 RELEASENAME="build_$(date +%Y%m%d%H%M%S)"
 RELEASEFOLDER="${RELEASES}/${RELEASENAME}"
-if [ ! -d "${RELEASES}" ] ; then echo "Releases dir ${RELEASES} not found"; usage 1; fi
-if [ -d "${RELEASEFOLDER}" ] ; then echo "Release folder ${RELEASEFOLDER} already exists"; exit 1; fi
+if [ ! -d "${RELEASES}" ] ; then usage_exit "Releases dir ${RELEASES} not found"; fi
+if [ -d "${RELEASEFOLDER}" ] ; then error_exit "Release folder ${RELEASEFOLDER} already exists"; fi
 
 # Check if the shared folder exists (but creating the symlinks is the installer script's responsibilty)
 SHAREDFOLDER="${ENVROOTDIR}/shared"
 SHAREDFOLDERS=( "var" "media" )
-if [ ! -d "${SHAREDFOLDER}" ] ; then echo "Shared folder ${SHAREDFOLDER} not found"; exit 1; fi
-for i in "${SHAREDFOLDERS[@]}" ; do if [ ! -d "${SHAREDFOLDER}/$i" ] ; then echo "Shared folder ${SHAREDFOLDER}/$i not found"; exit 1; fi; done
+if [ ! -d "${SHAREDFOLDER}" ] ; then error_exit "Shared folder ${SHAREDFOLDER} not found"; fi
+for i in "${SHAREDFOLDERS[@]}" ; do if [ ! -d "${SHAREDFOLDER}/$i" ] ; then error_exit "Shared folder ${SHAREDFOLDER}/$i not found"; fi; done
 
 
 # Create tmp dir and make sure it's going to be deleted in any case
@@ -91,19 +102,19 @@ EXTRAPACKAGEURL=${PACKAGEURL/.tar.gz/.extra.tar.gz}
 ########################################################################################################################
 
 if [ -f "${PACKAGEURL}" ] ; then
-    cp "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || { echo "Error while copying base package" ; exit 1; }
+    cp "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || error_exit "Error while copying base package"
     if [ "${EXTRA}" == 1 ] ; then
-        cp "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || { echo "Error while copying extra package" ; exit 1; }
+        cp "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || error_exit "Error while copying extra package"
     fi
 elif [[ "${PACKAGEURL}" =~ ^https?:// ]] ; then
     if [ ! -z "${USERNAME}" ] && [ ! -z "${PASSWORD}" ] ; then
         CREDENTIALS="--user=${USERNAME} --password=${PASSWORD}"
     fi
     echo "Downloading package via http"
-    wget --auth-no-challenge ${CREDENTIALS} "${PACKAGEURL}" -O "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from http" ; exit 1; }
+    wget --auth-no-challenge ${CREDENTIALS} "${PACKAGEURL}" -O "${TMPDIR}/package.tar.gz" || error_exit "Error while downloading base package from http"
     if [ "${EXTRA}" == 1 ] ; then
         echo "Downloading extra package via http"
-        wget --auth-no-challenge ${CREDENTIALS} "${EXTRAPACKAGEURL}" -O "${TMPDIR}/package.extra.tar.gz" || { echo "Error while downloading extra package from http" ; exit 1; }
+        wget --auth-no-challenge ${CREDENTIALS} "${EXTRAPACKAGEURL}" -O "${TMPDIR}/package.extra.tar.gz" || error_exit "Error while downloading extra package from http"
     fi
 elif [[ "${PACKAGEURL}" =~ ^s3:// ]] ; then
     echo -n "Downloading base package via S3"
@@ -115,19 +126,19 @@ elif [[ "${PACKAGEURL}" =~ ^s3:// ]] ; then
 
     if [ "${USES3CMD}" == 0 ] ; then
         echo " (via aws cli)";
-        aws ${PROFILEPARAM} s3 cp "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from S3" ; exit 1; }
+        aws ${PROFILEPARAM} s3 cp "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || error_exit "Error while downloading base package from S3"
     else
         echo " (via s3cmd)";
-        s3cmd get "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || { echo "Error while downloading base package from S3" ; exit 1; }
+        s3cmd get "${PACKAGEURL}" "${TMPDIR}/package.tar.gz" || error_exit "Error while downloading base package from S3"
     fi
     if [ "${EXTRA}" == 1 ] ; then
         echo -n "Downloading extra package via S3"
         if [ "${USES3CMD}" == 0 ] ; then
             echo " (via aws cli)";
-            aws ${PROFILEPARAM} s3 cp "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || { echo "Error while downloading extra package from S3" ; exit 1; }
+            aws ${PROFILEPARAM} s3 cp "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || error_exit "Error while downloading extra package from S3"
         else
             echo " (via s3cmd)";
-            s3cmd get "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || { echo "Error while downloading extra package from S3" ; exit 1; }
+            s3cmd get "${EXTRAPACKAGEURL}" "${TMPDIR}/package.extra.tar.gz" || error_exit "Error while downloading extra package from S3"
         fi
     fi
 fi
@@ -140,14 +151,14 @@ fi
 ########################################################################################################################
 
 echo "Creating release folder"
-mkdir "${RELEASEFOLDER}" || { echo "Error while creating release folder" ; exit 1; }
+mkdir "${RELEASEFOLDER}" || error_exit "Error while creating release folder"
 
 echo "Extracting base package"
-tar xzf "${TMPDIR}/package.tar.gz" -C "${RELEASEFOLDER}" || { echo "Error while extracting base package" ; exit 1; }
+tar xzf "${TMPDIR}/package.tar.gz" -C "${RELEASEFOLDER}" || error_exit "Error while extracting base package"
 
 if [ "${EXTRA}" == 1 ] ; then
     echo "Extracting extra package on top of base package"
-    tar xzf "${TMPDIR}/package.extra.tar.gz" -C "${RELEASEFOLDER}" || { echo "Error while extracting extra package" ; exit 1; }
+    tar xzf "${TMPDIR}/package.extra.tar.gz" -C "${RELEASEFOLDER}" || error_exit "Error while extracting extra package"
 fi
 
 
@@ -157,8 +168,8 @@ fi
 # Step 3: Trigger installation
 ########################################################################################################################
 
-if [ ! -f "${RELEASEFOLDER}/tools/install.sh" ] ; then echo "Could not find installer" ; exit 1; fi
-${RELEASEFOLDER}/tools/install.sh -e "${ENVIRONMENT}" -r "${RELEASEFOLDER}" || { echo "Installing package failed"; exit 1; }
+if [ ! -f "${RELEASEFOLDER}/tools/install.sh" ] ; then error_exit "Could not find installer"; fi
+${RELEASEFOLDER}/tools/install.sh -e "${ENVIRONMENT}" -r "${RELEASEFOLDER}" || error_exit "Installing package failed"
 
 
 
@@ -172,6 +183,6 @@ echo "Updating release symlink"
 echo "------------------------"
 
 echo "Settings current (${RELEASES}/current) to release folder (${RELEASENAME})"
-ln -sfn "${RELEASENAME}" "${RELEASES}/current" || { echo "Error while symlinking 'current' to release folder" ; exit 1; }
+ln -sfn "${RELEASENAME}" "${RELEASES}/current" || error_exit "Error while symlinking 'current' to release folder"
 
 echo "--> THIS PACKAGE IS LIVE NOW! <--"

@@ -13,7 +13,17 @@ function usage {
     exit $1
 }
 
-NUMBEROFBUILDSTOKEEP=2
+function error_exit {
+	echo "$1" 1>&2
+	exit 1
+}
+
+function usage_exit {
+    echo "$1" 1>&2
+    usage 1
+}
+
+NUMBEROFBUILDSTOKEEP=5
 
 while getopts 'r:n:' OPTION ; do
 case "${OPTION}" in
@@ -23,10 +33,10 @@ case "${OPTION}" in
     esac
 done
 
-if [ ! -d "${RELEASES}" ] ; then echo "Could not find releases dir ${RELEASES}"; usage 1; fi
-if [ ! -L "${RELEASES}/current" ] ; then echo "No 'current' symlink found. This does not seem to be a valid release root dir"; usage 1; fi
+if [ ! -d "${RELEASES}" ] ; then usage_exit "Could not find releases dir ${RELEASES}"; fi
+if [ ! -L "${RELEASES}/current" ] ; then usage_exit "No 'current' symlink found. This does not seem to be a valid release root dir"; fi
 
-cd ${RELEASES} || exit 1
+cd ${RELEASES} || error_exit "Cannot cd in releases folder ${RELEASES}"
 
 SYMLINKS=()
 SYMLINKS+=($(readlink -f "${RELEASES}/current"))
