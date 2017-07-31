@@ -110,7 +110,7 @@ else
         # Apply db settings
         cd "${RELEASEFOLDER}/htdocs" || error_exit "Error while switching to htdocs directory"
         if [ -f ../vendor/aoepeople/zettr/zettr.phar ]; then
-            ../vendor/aoepeople/zettr/zettr.phar apply --groups db ${ENVIRONMENT} ../config/settings.csv
+            ../vendor/aoepeople/zettr/zettr.phar apply --groups db ${ENVIRONMENT} ../config/settings.csv || error_exit "Error while applying settings"
         else
             ../tools/apply.php ${ENVIRONMENT} ../config/settings.csv || error_exit "Error while applying settings"
         fi
