@@ -22,6 +22,8 @@ function usage_exit {
 }
 
 PROJECTROOTDIR=$PWD
+HISTORY=''
+CURRENT_DATE=`date '+%Y-%m-%d %H:%M:%S'`
 
 ########## get argument-values
 while getopts 'f:b:g:d:r:' OPTION ; do
@@ -57,8 +59,40 @@ if [ $? == '0' ]; then
     echo "Using pigz for compression..."
 fi
 
+if [[ -f CHANGELOG.md ]]; then
+    HISTORY=`cat CHANGELOG.md`
+    :> CHANGELOG.md
+fi
+
+
 # Run composer
-$PHP_COMMAND tools/composer.phar install --verbose --no-ansi --no-interaction --prefer-source || error_exit "Composer failed"
+$PHP_COMMAND tools/composer.phar install --verbose --no-ansi --no-interaction --prefer-source 2>&1 | tee composer.log || error_exit "Composer failed"
+
+PACKAGE_REGEX="^Package operations"
+SCAN=0
+while read line
+do
+    if [[ $line = 'Writing lock file' ]]; then break; fi;
+
+    if [[ "$line" =~ $PACKAGE_REGEX ]]; then
+        SCAN=1;
+        echo
+        if [ -z ${BUILD_NUMBER} ]; then
+            echo "$CURRENT_DATE:"
+        else
+            echo "Build ${BUILD_NUMBER} from $CURRENT_DATE:"
+        fi;
+    fi;
+
+    if [[ $SCAN -eq 0 ]]; then
+        continue;
+    else
+        echo $line;
+    fi;
+done < composer.log > CHANGELOG.md
+
+# Add history again
+echo "$HISTORY" >> CHANGELOG.md
 
 # Some basic checks
 if [ ! -f 'htdocs/index.php' ] ; then error_exit "Could not find htdocs/index.php"; fi
