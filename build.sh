@@ -78,10 +78,11 @@ do
         SCAN=1;
         echo
         if [ -z ${BUILD_NUMBER} ]; then
-            echo "$CURRENT_DATE:"
+            echo "**${CURRENT_DATE}:**"
         else
-            echo "Build ${BUILD_NUMBER} from $CURRENT_DATE:"
+            echo "**Build ${BUILD_NUMBER} from ${CURRENT_DATE}:**"
         fi;
+        echo
     fi;
 
     if [[ $SCAN -eq 0 ]]; then
