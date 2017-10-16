@@ -23,7 +23,7 @@ for i in $FILES; do
         continue
     fi
 
-    php -l "$i" || error_exit "Unable to parse file '$i'"
+    php -l "$i" >/dev/null 2>&1 || error_exit "Unable to parse file '$i'"
     echo $md5 >> $TMP_FILE
 done
 
