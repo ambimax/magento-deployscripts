@@ -17,6 +17,7 @@
     "modman",
     "project_reset.sh",
     "phplint.sh",
+    "test.sh",
     "xmllint.sh"
   ]
 }
