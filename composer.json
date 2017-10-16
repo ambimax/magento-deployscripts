@@ -12,6 +12,7 @@
     }
   ],
   "bin": [
+    "git-status.sh",
     "install.sh",
     "n98-magerun.phar",
     "modman",
