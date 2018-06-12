@@ -77,7 +77,11 @@ echo
 echo "Running modman"
 echo "--------------"
 cd "${RELEASEFOLDER}" || error_exit "Error while switching to release directory"
-tools/modman deploy-all --force || error_exit "Error while running modman"
+if [[  "${ENVIRONMENT}" = "devbox" ]]; then
+    tools/modman deploy-all --force || error_exit "Error while running modman"
+else
+    tools/modman deploy-all --copy --force || error_exit "Error while running modman"
+fi
 
 
 
